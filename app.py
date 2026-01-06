@@ -122,7 +122,7 @@ with st.sidebar:
     
     st.markdown("### 待機時間設定 (秒)")
     c1, c2 = st.columns(2)
-    # デフォルトを 8秒〜10秒 に設定
+    # ★変更: デフォルトを 8秒〜10秒 に設定
     with c1: min_sleep = st.number_input("最小", value=8, min_value=1)
     with c2: max_sleep = st.number_input("最大", value=10, min_value=1)
     
@@ -130,7 +130,7 @@ with st.sidebar:
     st.info("💡 完了後は次の開始ボタンが3分間ロックされます。")
     st.markdown("---")
     
-    # ★変更: ボタンを消したり出したりするためのプレースホルダーを作成
+    # 開始ボタン制御エリア
     start_btn_area = st.empty()
     start_btn = start_btn_area.button("順位チェック開始", type="primary", width='stretch')
     
@@ -150,7 +150,7 @@ if start_btn and not st.session_state.is_running:
     # 警告クリア・初期化
     block_alert.empty()
     high_rank_counter = 0
-    st.session_state.should_cooldown = False # クールダウンフラグリセット
+    st.session_state.should_cooldown = False 
     
     if not target_url or not keywords_text.strip():
         st.sidebar.error("URLとキーワードを入力してください。")
@@ -208,11 +208,11 @@ if start_btn and not st.session_state.is_running:
 
         if st.session_state.is_running:
             status_text.success("✅ 全キーワードのチェックが完了しました。")
-            st.session_state.should_cooldown = True # 完了したのでクールダウンフラグを立てる
+            st.session_state.should_cooldown = True 
 
         st.session_state.is_running = False
 
-# --- 結果表示（ここは常に実行されるので、完了直後にボタンが出る） ---
+# --- 結果表示 ---
 if st.session_state.results:
     st.divider()
     st.subheader("チェック結果一覧")
@@ -234,13 +234,10 @@ if st.session_state.results:
     st.subheader("報告用テキスト（コピーボタン付き）")
     st.code(generate_report_text(df_final.copy(), target_url), language='text')
 
-# --- ★新機能: 完了後のクールダウン処理 ---
-# 結果が表示された「後」に実行されるため、ダウンロードボタンは押せる状態です
+# --- 完了後のクールダウン処理 ---
 if st.session_state.should_cooldown:
-    # 1. 開始ボタンを消す
     start_btn_area.empty()
     
-    # 2. サイドバーでカウントダウン
     info_area = st.sidebar.empty()
     final_rest = 180 # 3分間
     
@@ -252,6 +249,5 @@ if st.session_state.should_cooldown:
     time.sleep(2)
     info_area.empty()
     
-    # 3. フラグを下ろしてリロード（ボタンを復活させる）
     st.session_state.should_cooldown = False
     st.rerun()
