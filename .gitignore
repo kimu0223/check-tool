@@ -1,0 +1,27 @@
+# Pythonの一時ファイル
+__pycache__/
+*.pyc
+
+# 仮想環境（もしあれば）
+venv/
+env/
+.env
+
+# データベース（自動生成されるためアップロード不要）
+*.db
+ranking_data.db
+
+# OSの管理ファイル
+.DS_Store
+
+# VS Codeの設定フォルダ
+.vscode/
+
+# Seleniumのキャッシュやログ
+geckodriver.log
+
+# これを追加してください（Chromeのプロファイルフォルダをすべて無視する設定）
+chrome_profile_*/
+chrome_profile_multi_*/
+chrome_profile_safe/
+Default/
