@@ -9,6 +9,16 @@ from urllib.parse import unquote
 class RankScraper:
     def __init__(self, show_browser=True):
         self.show_browser = show_browser
+        
+        # User-Agentリスト（毎回違うブラウザのふりをするための変装セット）
+        self.user_agents = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/121.0",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0"
+        ]
 
     def _get_driver(self):
         options = Options()
@@ -22,8 +32,12 @@ class RankScraper:
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--window-size=1280,900")
         options.add_argument("--log-level=3")
-        options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        
+        # ★リストからランダムに1つ選んでセット（変装）
+        ua = random.choice(self.user_agents)
+        options.add_argument(f"user-agent={ua}")
 
+        # スイッチがOFFならブラウザ画面を出さない（ヘッドレス）
         if not self.show_browser:
             options.add_argument("--headless") 
 

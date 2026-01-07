@@ -13,6 +13,11 @@ import random
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="fpdf")
 
+# --- ★設定スイッチ（ここを変えるだけで開発/配布を切り替えられます） ---
+# True  = 開発用（ブラウザが見える）
+# False = 配布用（ブラウザが見えない・裏で動く）
+SHOW_BROWSER = True
+
 # --- 設定 ---
 DB_FILE = "ranking_data.db"
 
@@ -85,10 +90,10 @@ def scrape_keyword_task(args):
     global high_rank_counter
     kw, url, min_s, max_s = args
     
-    scraper = RankScraper(show_browser=True)
+    # スイッチの設定に従ってブラウザを表示/非表示にする
+    scraper = RankScraper(show_browser=SHOW_BROWSER)
     data = scraper.check_rank(kw, url, min_s, max_s)
     
-    # 連続上位ランク時の微調整
     rank_str = data["yahoo_rank"]
     is_top10 = False
     if rank_str.isdigit() and int(rank_str) <= 10:
@@ -103,7 +108,6 @@ def scrape_keyword_task(args):
         else:
             high_rank_counter = 0
 
-    # 指定された秒数分待機
     time.sleep(random.uniform(min_s, max_s))
             
     return data
@@ -112,7 +116,6 @@ def scrape_keyword_task(args):
 st.title("検索順位チェックツール")
 st.markdown("Yahoo! の検索順位を一括チェックします。（50位まで調査）")
 
-# ブロック検知時の警告表示エリア
 block_alert = st.empty()
 
 with st.sidebar:
@@ -122,21 +125,18 @@ with st.sidebar:
     
     st.markdown("### 待機時間設定 (秒)")
     c1, c2 = st.columns(2)
-    # ★変更: デフォルトを 8秒〜10秒 に設定
     with c1: min_sleep = st.number_input("最小", value=8, min_value=1)
     with c2: max_sleep = st.number_input("最大", value=10, min_value=1)
     
-    st.info("💡 32キーワード経過時に2分休憩が入ります。")
+    st.info("💡 10件ごとに60秒の休憩が入ります。")
     st.info("💡 完了後は次の開始ボタンが3分間ロックされます。")
     st.markdown("---")
     
-    # 開始ボタン制御エリア
     start_btn_area = st.empty()
     start_btn = start_btn_area.button("順位チェック開始", type="primary", width='stretch')
     
     stop_btn = st.button("中断", type="secondary", width='stretch')
 
-# ステート管理
 if 'is_running' not in st.session_state: st.session_state.is_running = False
 if 'results' not in st.session_state: st.session_state.results = []
 if 'should_cooldown' not in st.session_state: st.session_state.should_cooldown = False
@@ -145,9 +145,7 @@ if stop_btn:
     st.session_state.is_running = False
     st.warning("中断しました。")
 
-# --- チェック実行処理 ---
 if start_btn and not st.session_state.is_running:
-    # 警告クリア・初期化
     block_alert.empty()
     high_rank_counter = 0
     st.session_state.should_cooldown = False 
@@ -171,11 +169,11 @@ if start_btn and not st.session_state.is_running:
             for i in range(0, total_keywords, BATCH_SIZE):
                 if not st.session_state.is_running: break
                 
-                # 32キーワード目（16ループ目）で強制的に2分休憩
-                if i == 32:
-                    rest_time = 120 # 2分間
+                # ★ここが重要: 10件ごとに1分休憩してブロックを回避
+                if i > 0 and i % 10 == 0:
+                    rest_time = 60 # 1分間
                     for r in range(rest_time, 0, -1):
-                        status_text.warning(f"☕ [中間休憩] 32件を超えました。ブロック回避のため休憩中... 残り {r} 秒")
+                        status_text.warning(f"☕ [安全休憩] 10件ごとにIPを休ませています... 残り {r} 秒")
                         time.sleep(1)
                         if not st.session_state.is_running: break
                     if not st.session_state.is_running: break
@@ -188,7 +186,6 @@ if start_btn and not st.session_state.is_running:
                 results = list(executor.map(scrape_keyword_task, args_list))
                 
                 for data in results:
-                    # エラー判定
                     if data["yahoo_rank"] == "エラー":
                         block_alert.error(
                             "ブロックされた可能性があります。\n"
@@ -212,7 +209,6 @@ if start_btn and not st.session_state.is_running:
 
         st.session_state.is_running = False
 
-# --- 結果表示 ---
 if st.session_state.results:
     st.divider()
     st.subheader("チェック結果一覧")
@@ -234,12 +230,11 @@ if st.session_state.results:
     st.subheader("報告用テキスト（コピーボタン付き）")
     st.code(generate_report_text(df_final.copy(), target_url), language='text')
 
-# --- 完了後のクールダウン処理 ---
 if st.session_state.should_cooldown:
     start_btn_area.empty()
     
     info_area = st.sidebar.empty()
-    final_rest = 180 # 3分間
+    final_rest = 180 
     
     for r in range(final_rest, 0, -1):
         info_area.error(f"🛑 [安全停止] 次のチェックまで IP休憩中... 残り {r} 秒")
