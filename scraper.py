@@ -33,7 +33,7 @@ class RankScraper:
         options.add_argument("--window-size=1280,900")
         options.add_argument("--log-level=3")
         
-        # ★リストからランダムに1つ選んでセット（変装）
+        # ランダムにUser-Agentを選択してセット
         ua = random.choice(self.user_agents)
         options.add_argument(f"user-agent={ua}")
 
@@ -90,10 +90,33 @@ class RankScraper:
                     elements = driver.find_elements(By.CSS_SELECTOR, ".sw-Card")
                     for el in elements:
                         try:
+                            # ---------------------------------------------
+                            # ★追加修正: 広告（スポンサー）の完全除外ロジック
+                            # ---------------------------------------------
+                            
+                            # まず、カード内のテキストを取得
+                            card_text = el.text
+                            
+                            # 「スポンサー」や「広告」という文字が含まれていたら、
+                            # それは自然検索ではないので、カウントせずにスキップする
+                            if "スポンサー" in card_text or "広告" in card_text:
+                                continue
+
+                            # タイトルリンクを取得
                             title = el.find_elements(By.CSS_SELECTOR, ".sw-Card__title > a")
+                            
+                            # タイトルがない場合（動画枠や特殊枠など）もスキップ
                             if not title: continue
+                            
+                            # ここまで来て初めて「1つ」とカウントする
                             url = title[0].get_attribute("href")
                             y_current_count += 1
+                            
+                            # もし50位を超えたら、その瞬間に調査終了（ハードリミット）
+                            if y_current_count > 50:
+                                break
+
+                            # ターゲットURLと一致するか判定
                             if self._is_match(url, target_url):
                                 y_rank = str(y_current_count)
                                 y_found = True
@@ -101,6 +124,7 @@ class RankScraper:
                         except: continue
                     
                     if y_found: break
+                    if y_current_count >= 50: break # ページめくりの前にもチェック
                     
                     if page < (MAX_PAGES - 1):
                         try:
