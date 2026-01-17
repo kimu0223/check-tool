@@ -1,0 +1,13 @@
+python_env/
+venv/
+env/
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+*.exe
+*.log
+.vscode/
+chrome_profile_*/
+*.db
